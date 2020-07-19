@@ -118,3 +118,41 @@ func (r GivenValuesRule) Set(current grid.Coordinate, value uint8, state *genera
 	// nothing to do here, this rule only needs Init
 	next(state)
 }
+
+type CrossRule struct{}
+
+var crossAreas [2]Area = func() [2]Area {
+	areas := [2]Area{make(Area, 9), make(Area, 9)}
+	for n := 0; n < 9; n++ {
+		areas[0][n] = grid.GetCoordinate(n, n)
+		areas[1][n] = grid.GetCoordinate(n, 8-n)
+	}
+	return areas
+}()
+
+func (r CrossRule) Filter(filter *generator.Filter) bool {
+	for _, area := range crossAreas {
+		if !filter.UniqueGroup(area...) {
+			return false
+		}
+	}
+	return true
+}
+
+func (r CrossRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+	if current.Row() == current.Col() {
+		for _, coordinate := range crossAreas[0] {
+			if !state.Block(coordinate, value) {
+				return
+			}
+		}
+	}
+	if current.Row() == 8-current.Col() {
+		for _, coordinate := range crossAreas[1] {
+			if !state.Block(coordinate, value) {
+				return
+			}
+		}
+	}
+	next(state)
+}
