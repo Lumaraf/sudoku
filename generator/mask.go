@@ -2,6 +2,7 @@ package generator
 
 import (
 	"github.com/lumaraf/sudoku-checker/grid"
+	"math/bits"
 )
 
 type ValueMask uint16
@@ -16,6 +17,10 @@ func NewValueMask(values ...uint8) ValueMask {
 	return m
 }
 
+func NewRangeValueMask(min, max uint8) ValueMask {
+	return (AllValuesMask << (min - 1)) & (AllValuesMask >> (9 - max))
+}
+
 func (m ValueMask) Get(value uint8) bool {
 	return m&(1<<(value-1)) != 0
 }
@@ -26,6 +31,14 @@ func (m ValueMask) Set(value uint8) ValueMask {
 
 func (m ValueMask) Clear(value uint8) ValueMask {
 	return m & ^(1 << (value - 1))
+}
+
+func (m ValueMask) Minimum() uint8 {
+	return uint8(bits.TrailingZeros16(uint16((m)))) + 1
+}
+
+func (m ValueMask) Maximum() uint8 {
+	return uint8(16 - bits.LeadingZeros16(uint16((m))))
 }
 
 type ValueMaskGrid [9][9]ValueMask
