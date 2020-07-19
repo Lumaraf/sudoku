@@ -41,29 +41,53 @@ func (r MirrorRule) Set(current grid.Coordinate, value uint8, state *generator.G
 }
 
 type Area []grid.Coordinate
+type Areas []Area
 
-type UniqueAreaRule struct {
-	areas [9][9][]Area
+func (a Areas) Filter(filter *generator.Filter) bool {
+	for _, area := range a {
+		if !filter.UniqueGroup(area...) {
+			return false
+		}
+	}
+	return true
 }
 
-func NewUniqueAreaRule(areas []Area) *UniqueAreaRule {
-	r := UniqueAreaRule{}
+func (a Areas) Set(value uint8, state *generator.GeneratorState) bool {
+	for _, area := range a {
+		for _, other := range area {
+			if !state.Block(other, value) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+type UniqueAreaRule struct {
+	areas     Areas
+	cellAreas [9][9]Areas
+}
+
+func NewUniqueAreaRule(areas Areas) *UniqueAreaRule {
+	r := UniqueAreaRule{
+		areas: areas,
+	}
 	for _, area := range areas {
 		for _, coordinate := range area {
-			buf := &r.areas[coordinate.Row()][coordinate.Col()]
+			buf := &r.cellAreas[coordinate.Row()][coordinate.Col()]
 			*buf = append(*buf, area)
 		}
 	}
 	return &r
 }
 
+func (r UniqueAreaRule) Filter(filter *generator.Filter) bool {
+	return r.areas.Filter(filter)
+}
+
 func (r UniqueAreaRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
-	for _, area := range r.areas[current.Row()][current.Col()] {
-		for _, other := range area {
-			if !state.Block(other, value) {
-				return
-			}
-		}
+	if !r.cellAreas[current.Row()][current.Col()].Set(value, state) {
+		return
 	}
 	next(state)
 }

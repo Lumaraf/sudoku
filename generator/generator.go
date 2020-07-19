@@ -10,37 +10,9 @@ type Rule interface {
 	Set(current grid.Coordinate, value uint8, state *GeneratorState, next NextFunc)
 }
 
-type PreMaskingRule interface {
+type FilterRule interface {
 	Rule
-	PreMask(maskGrid *ValueMaskGrid)
-}
-
-type ValueMask uint16
-
-func NewValueMask(values ...uint8) ValueMask {
-	m := ValueMask(0)
-	for _, value := range values {
-		m = m.Set(value)
-	}
-	return m
-}
-
-func (m ValueMask) Get(value uint8) bool {
-	return m&(1<<(value-1)) != 0
-}
-
-func (m ValueMask) Set(value uint8) ValueMask {
-	return m | (1 << (value - 1))
-}
-
-func (m ValueMask) Clear(value uint8) ValueMask {
-	return m & ^(1 << (value - 1))
-}
-
-type ValueMaskGrid [9][9]ValueMask
-
-func (mg *ValueMaskGrid) Restrict(coordinate grid.Coordinate, mask ValueMask) {
-	mg[coordinate.Row()][coordinate.Col()] &= mask
+	Filter(filter *Filter) bool
 }
 
 type NextFunc func(state *GeneratorState)
@@ -61,6 +33,24 @@ func (g *GeneratorState) Block(coordinate grid.Coordinate, value uint8) bool {
 	}
 	m := &g.masks[coordinate.Row()][coordinate.Col()]
 	*m = m.Clear(value)
+	return *m != 0
+}
+
+func (g *GeneratorState) BlockAll(coordinate grid.Coordinate, mask ValueMask) bool {
+	if currentValue := g.Get(coordinate); currentValue != 0 {
+		return true
+	}
+	m := &g.masks[coordinate.Row()][coordinate.Col()]
+	*m &= ^mask
+	return *m != 0
+}
+
+func (g *GeneratorState) Restrict(coordinate grid.Coordinate, mask ValueMask) bool {
+	if currentValue := g.Get(coordinate); currentValue != 0 {
+		return true
+	}
+	m := &g.masks[coordinate.Row()][coordinate.Col()]
+	*m &= mask
 	return *m != 0
 }
 
@@ -167,6 +157,7 @@ func (g GeneratorState) FillNext() {
 	}
 
 	// no empty cells means the solution is complete
+	fmt.Println(*g.steps)
 	if !g.result(g.values) {
 		*g.exit = true
 	}
@@ -192,11 +183,21 @@ func Generate(rules []Rule, result func(grid.Grid) bool) {
 		c++
 	}
 
-	for _, rule := range rules {
-		if preMaskingRule, ok := rule.(PreMaskingRule); ok {
-			preMaskingRule.PreMask(&g.masks)
+	filter := NewFilter(&g.masks)
+	filter.changed = true
+	for filter.changed {
+		filter.changed = false
+		for _, rule := range rules {
+			if filterRule, ok := rule.(FilterRule); ok {
+				if !filterRule.Filter(&filter) {
+					fmt.Println("no solution in filtering")
+					return
+				}
+			}
 		}
 	}
 
-	g.FillNext()
+	g.setRestrictedCells(func(state *GeneratorState) {
+		state.FillNext()
+	})
 }

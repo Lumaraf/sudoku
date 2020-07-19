@@ -7,19 +7,26 @@ import (
 
 type RowRule struct{}
 
-func (r RowRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r RowRule) Filter(filter *generator.Filter) bool {
 	for row := 0; row < 9; row++ {
-		c := grid.GetCoordinate(row, current.Col())
-		if !state.Block(c, value) {
-			return
+		if !filter.UniqueGroup(
+			grid.GetCoordinate(row, 0),
+			grid.GetCoordinate(row, 1),
+			grid.GetCoordinate(row, 2),
+			grid.GetCoordinate(row, 3),
+			grid.GetCoordinate(row, 4),
+			grid.GetCoordinate(row, 5),
+			grid.GetCoordinate(row, 6),
+			grid.GetCoordinate(row, 7),
+			grid.GetCoordinate(row, 8),
+		) {
+			return false
 		}
 	}
-	next(state)
+	return true
 }
 
-type ColumnRule struct{}
-
-func (r ColumnRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r RowRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
 	for col := 0; col < 9; col++ {
 		c := grid.GetCoordinate(current.Row(), col)
 		if !state.Block(c, value) {
@@ -29,7 +36,59 @@ func (r ColumnRule) Set(current grid.Coordinate, value uint8, state *generator.G
 	next(state)
 }
 
+type ColumnRule struct{}
+
+func (r ColumnRule) Filter(filter *generator.Filter) bool {
+	for col := 0; col < 9; col++ {
+		if !filter.UniqueGroup(
+			grid.GetCoordinate(0, col),
+			grid.GetCoordinate(1, col),
+			grid.GetCoordinate(2, col),
+			grid.GetCoordinate(3, col),
+			grid.GetCoordinate(4, col),
+			grid.GetCoordinate(5, col),
+			grid.GetCoordinate(6, col),
+			grid.GetCoordinate(7, col),
+			grid.GetCoordinate(8, col),
+		) {
+			return false
+		}
+	}
+	return true
+}
+
+func (r ColumnRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+	for row := 0; row < 9; row++ {
+		c := grid.GetCoordinate(row, current.Col())
+		if !state.Block(c, value) {
+			return
+		}
+	}
+	next(state)
+}
+
 type SquareRule struct{}
+
+func (r SquareRule) Filter(filter *generator.Filter) bool {
+	for row := 0; row < 9; row += 3 {
+		for col := 0; col < 9; col += 3 {
+			if !filter.UniqueGroup(
+				grid.GetCoordinate(row, col),
+				grid.GetCoordinate(row, col+1),
+				grid.GetCoordinate(row, col+2),
+				grid.GetCoordinate(row+1, col),
+				grid.GetCoordinate(row+1, col+1),
+				grid.GetCoordinate(row+1, col+2),
+				grid.GetCoordinate(row+2, col),
+				grid.GetCoordinate(row+2, col+1),
+				grid.GetCoordinate(row+2, col+2),
+			) {
+				return false
+			}
+		}
+	}
+	return true
+}
 
 func (r SquareRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
 	row := (current.Row() / 3) * 3
@@ -46,10 +105,13 @@ func (r SquareRule) Set(current grid.Coordinate, value uint8, state *generator.G
 
 type GivenValuesRule map[grid.Coordinate]uint8
 
-func (r GivenValuesRule) PreMask(maskGrid *generator.ValueMaskGrid) {
+func (r GivenValuesRule) Filter(filter *generator.Filter) bool {
 	for coordinate, value := range r {
-		maskGrid.Restrict(coordinate, generator.NewValueMask(value))
+		if !filter.Restrict(coordinate, generator.NewValueMask(value)) {
+			return false
+		}
 	}
+	return true
 }
 
 func (r GivenValuesRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
