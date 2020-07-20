@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/lumaraf/sudoku-checker/generator"
-	"github.com/lumaraf/sudoku-checker/grid"
-	"github.com/lumaraf/sudoku-checker/rules"
+	"github.com/lumaraf/sudoku-solver/generator"
+	"github.com/lumaraf/sudoku-solver/grid"
+	"github.com/lumaraf/sudoku-solver/rules"
 	"time"
 )
 

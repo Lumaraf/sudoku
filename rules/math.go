@@ -1,8 +1,8 @@
 package rules
 
 import (
-	"github.com/lumaraf/sudoku-checker/generator"
-	"github.com/lumaraf/sudoku-checker/grid"
+	"github.com/lumaraf/sudoku-solver/generator"
+	"github.com/lumaraf/sudoku-solver/grid"
 )
 
 type NonConsecutiveRule struct{}

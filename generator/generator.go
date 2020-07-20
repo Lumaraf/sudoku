@@ -2,7 +2,7 @@ package generator
 
 import (
 	"fmt"
-	"github.com/lumaraf/sudoku-checker/grid"
+	"github.com/lumaraf/sudoku-solver/grid"
 	"math/bits"
 )
 
