@@ -46,7 +46,7 @@ func (r MagicSquareRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r MagicSquareRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r MagicSquareRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	for n, item := range magicSquareRing {
 		if r.Coordinate+item.c != current {
 			continue

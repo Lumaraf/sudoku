@@ -6,11 +6,11 @@ import (
 )
 
 type Filter struct {
-	*ValueMaskGrid
+	ValueMaskGrid
 	changed bool
 }
 
-func NewFilter(maskGrid *ValueMaskGrid) Filter {
+func NewFilter(maskGrid ValueMaskGrid) Filter {
 	return Filter{
 		maskGrid,
 		false,

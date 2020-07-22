@@ -56,7 +56,7 @@ func (r KillerRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r KillerRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r KillerRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	for _, entry := range r.entryMap[current.Row()][current.Col()] {
 		getAreaMask := func() generator.ValueMask {
 			mask := generator.ValueMask(0)

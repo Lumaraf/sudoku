@@ -27,7 +27,7 @@ func (r *MirrorRule) Add(row1, col1, row2, col2 int) {
 	}
 }
 
-func (r MirrorRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r MirrorRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	mirror := r.Mirror[current.Row()][current.Col()]
 	if mirror.Active {
 		mirrorValue := state.Get(mirror.Coordinate)
@@ -52,7 +52,7 @@ func (a Areas) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (a Areas) Set(value uint8, state *generator.GeneratorState) bool {
+func (a Areas) Set(value uint8, state generator.GeneratorState) bool {
 	for _, area := range a {
 		for _, other := range area {
 			if !state.Block(other, value) {
@@ -85,7 +85,7 @@ func (r UniqueAreaRule) Filter(filter *generator.Filter) bool {
 	return r.areas.Filter(filter)
 }
 
-func (r UniqueAreaRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r UniqueAreaRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	if !r.cellAreas[current.Row()][current.Col()].Set(value, state) {
 		return
 	}

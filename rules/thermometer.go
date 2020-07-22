@@ -56,7 +56,7 @@ func (r ThermometerRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r ThermometerRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r ThermometerRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	for _, area := range r.cellAreas[current.Row()][current.Col()] {
 		index := 0
 		var coordinate grid.Coordinate

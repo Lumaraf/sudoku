@@ -9,7 +9,7 @@ import (
 type AntiKnightsMoveRule struct {
 }
 
-func (r AntiKnightsMoveRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r AntiKnightsMoveRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	if current.Row() > 0 {
 		if current.Row() > 1 {
 			if current.Col() >= 1 && !state.Block(grid.GetCoordinate(current.Row()-2, current.Col()-1), value) {
@@ -59,11 +59,11 @@ func NewAntiQueensMoveRule(mask generator.ValueMask) AntiQueensMoveRule {
 
 var queensMoveSets [9][]PlacementSet = generateAntiQueensPlacementSets()
 
-func (r AntiQueensMoveRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r AntiQueensMoveRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	if current.Row() == 0 && r.mask.Get(value) {
 		// try out possible placements
 		for _, set := range queensMoveSets[current.Col()] {
-			set.Place(*state, set, value, next)
+			set.Place(state, set, value, next)
 		}
 	} else {
 		next(state)
@@ -120,7 +120,7 @@ func generateAntiQueensPlacementSets() (result [9][]PlacementSet) {
 
 type AntiKingsMoveRule struct{}
 
-func (r AntiKingsMoveRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r AntiKingsMoveRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	if current.Row() >= 1 {
 		if current.Col() >= 1 && !state.Block(grid.GetCoordinate(current.Row()-1, current.Col()-1), value) {
 			return
@@ -153,11 +153,11 @@ func NewKnightsMoveRule(mask generator.ValueMask) KnightsMoveRule {
 
 var knightsMoveSets [9][]PlacementSet = findKnightsPlacementSets()
 
-func (r KnightsMoveRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r KnightsMoveRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	if current.Row() == 0 && r.mask.Get(value) {
 		// try out possible placements
 		for _, set := range knightsMoveSets[current.Col()] {
-			set.Place(*state, set, value, next)
+			set.Place(state, set, value, next)
 		}
 	} else {
 		next(state)

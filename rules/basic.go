@@ -26,7 +26,7 @@ func (r RowRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r RowRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r RowRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	for col := 0; col < 9; col++ {
 		c := grid.GetCoordinate(current.Row(), col)
 		if !state.Block(c, value) {
@@ -57,7 +57,7 @@ func (r ColumnRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r ColumnRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r ColumnRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	for row := 0; row < 9; row++ {
 		c := grid.GetCoordinate(row, current.Col())
 		if !state.Block(c, value) {
@@ -90,7 +90,7 @@ func (r BoxRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r BoxRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r BoxRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	row := (current.Row() / 3) * 3
 	col := (current.Col() / 3) * 3
 	for rowOffset := 0; rowOffset < 3; rowOffset++ {
@@ -114,7 +114,7 @@ func (r GivenValuesRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r GivenValuesRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r GivenValuesRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	// nothing to do here, this rule only needs Init
 	next(state)
 }
@@ -139,7 +139,7 @@ func (r CrossRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r CrossRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r CrossRule) Set(current grid.Coordinate, value uint8, state generator.GeneratorState, next generator.NextFunc) {
 	if current.Row() == current.Col() {
 		for _, coordinate := range crossAreas[0] {
 			if !state.Block(coordinate, value) {

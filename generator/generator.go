@@ -1,13 +1,15 @@
 package generator
 
 import (
+	"errors"
 	"fmt"
 	"github.com/lumaraf/sudoku-solver/grid"
 	"math/bits"
+	"time"
 )
 
 type Rule interface {
-	Set(current grid.Coordinate, value uint8, state *GeneratorState, next NextFunc)
+	Set(current grid.Coordinate, value uint8, state GeneratorState, next NextFunc)
 }
 
 type FilterRule interface {
@@ -15,7 +17,7 @@ type FilterRule interface {
 	Filter(filter *Filter) bool
 }
 
-type NextFunc func(state *GeneratorState)
+type NextFunc func(state GeneratorState)
 
 type GeneratorState struct {
 	exit    *bool
@@ -54,24 +56,12 @@ func (g *GeneratorState) Restrict(coordinate grid.Coordinate, mask ValueMask) bo
 	return *m != 0
 }
 
-func (g *GeneratorState) IsAllowed(coordinate grid.Coordinate, value uint8) bool {
+func (g GeneratorState) IsAllowed(coordinate grid.Coordinate, value uint8) bool {
 	return g.masks[coordinate.Row()][coordinate.Col()].Get(value)
 }
 
-func (g *GeneratorState) Get(coordinate grid.Coordinate) uint8 {
+func (g GeneratorState) Get(coordinate grid.Coordinate) uint8 {
 	return g.values[coordinate.Row()][coordinate.Col()]
-}
-
-func (g *GeneratorState) set(coordinate grid.Coordinate, value uint8) bool {
-	cell := &g.values[coordinate.Row()][coordinate.Col()]
-	if *cell != 0 {
-		return *cell == value
-	}
-	if !g.IsAllowed(coordinate, value) {
-		return false
-	}
-	*cell = value
-	return true
 }
 
 func (g GeneratorState) WithCell(coordinate grid.Coordinate, value uint8, next NextFunc) {
@@ -83,15 +73,27 @@ func (g GeneratorState) WithCell(coordinate grid.Coordinate, value uint8, next N
 	//	fmt.Println()
 	//}
 
-	if !*g.exit && g.set(coordinate, value) {
-		g.processRules(coordinate, value, next)
+	if *g.exit {
+		return
 	}
+
+	cell := g.values[coordinate.Row()][coordinate.Col()]
+	if cell != 0 && cell == value {
+		next(g)
+	}
+
+	if !g.IsAllowed(coordinate, value) {
+		return
+	}
+
+	g.values[coordinate.Row()][coordinate.Col()] = value
+	g.processRules(coordinate, value, next)
 }
 
-func (g *GeneratorState) processRules(current grid.Coordinate, value uint8, resultCallback NextFunc) {
+func (g GeneratorState) processRules(current grid.Coordinate, value uint8, resultCallback NextFunc) {
 	rules := g.rules
 	var next NextFunc
-	next = func(state *GeneratorState) {
+	next = func(state GeneratorState) {
 		if len(rules) == 0 {
 			state.setRestrictedCells(resultCallback)
 			return
@@ -105,7 +107,7 @@ func (g *GeneratorState) processRules(current grid.Coordinate, value uint8, resu
 	next(g)
 }
 
-func (g *GeneratorState) setRestrictedCells(resultCallback NextFunc) {
+func (g GeneratorState) setRestrictedCells(resultCallback NextFunc) {
 	coordinates := make([]grid.Coordinate, 0, 81)
 
 	current := g.current
@@ -119,7 +121,7 @@ func (g *GeneratorState) setRestrictedCells(resultCallback NextFunc) {
 	}
 
 	var next NextFunc
-	next = func(state *GeneratorState) {
+	next = func(state GeneratorState) {
 		if len(coordinates) == 0 {
 			resultCallback(state)
 			return
@@ -127,7 +129,7 @@ func (g *GeneratorState) setRestrictedCells(resultCallback NextFunc) {
 		coordinate := coordinates[0]
 		coordinates = coordinates[1:]
 
-		mask := g.masks[coordinate.Row()][coordinate.Col()]
+		mask := state.masks[coordinate.Row()][coordinate.Col()]
 		value := uint8(bits.TrailingZeros16(uint16(mask)) + 1)
 		state.WithCell(coordinate, value, next)
 	}
@@ -144,7 +146,7 @@ func (g GeneratorState) FillNext() {
 				mask = mask >> zeros
 				value += zeros
 
-				g.WithCell(g.current, value, func(newState *GeneratorState) {
+				g.WithCell(g.current, value, func(newState GeneratorState) {
 					newState.current++
 					newState.FillNext()
 				})
@@ -183,7 +185,8 @@ func Generate(rules []Rule, result func(grid.Grid) bool) {
 		c++
 	}
 
-	filter := NewFilter(&g.masks)
+	filterStart := time.Now()
+	filter := NewFilter(g.masks)
 	filter.changed = true
 	for filter.changed {
 		filter.changed = false
@@ -196,8 +199,26 @@ func Generate(rules []Rule, result func(grid.Grid) bool) {
 			}
 		}
 	}
+	fmt.Println("filter", time.Now().Sub(filterStart))
 
-	g.setRestrictedCells(func(state *GeneratorState) {
+	g.masks = filter.ValueMaskGrid
+
+	g.setRestrictedCells(func(state GeneratorState) {
 		state.FillNext()
 	})
+}
+
+func GenerateOne(rules []Rule) (grid.Grid, error) {
+	solutions := []grid.Grid{}
+	Generate(rules, func(g grid.Grid) bool {
+		solutions = append(solutions, g)
+		return len(solutions) < 2
+	})
+	if len(solutions) == 0 {
+		return grid.Grid{}, errors.New("no solution found")
+	}
+	if len(solutions) > 1 {
+		return grid.Grid{}, errors.New("rules allow multiple solutions")
+	}
+	return solutions[0], nil
 }
