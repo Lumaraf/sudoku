@@ -2,60 +2,62 @@ package main
 
 import (
 	"fmt"
+	"github.com/alexflint/go-arg"
+	"github.com/lumaraf/sudoku-solver/definition"
 	"github.com/lumaraf/sudoku-solver/generator"
 	"github.com/lumaraf/sudoku-solver/grid"
-	"github.com/lumaraf/sudoku-solver/rules"
+	"gopkg.in/yaml.v2"
+	"os"
 	"time"
+	"unsafe"
 )
 
+type args struct {
+	DefinitionFile string `arg:"positional" help:"write memory profile to 'file''"`
+}
+
 func main() {
-	rules := []generator.Rule{
-		&rules.RowRule{},
-		&rules.ColumnRule{},
-		&rules.SquareRule{},
-		//rules.NewUniqueAreaRule([]rules.Area{
-		//	{
-		//		grid.GetCoordinate(1, 1), grid.GetCoordinate(1, 2), grid.GetCoordinate(1, 3),
-		//		grid.GetCoordinate(2, 1), grid.GetCoordinate(2, 2), grid.GetCoordinate(2, 3),
-		//		grid.GetCoordinate(3, 1), grid.GetCoordinate(3, 2), grid.GetCoordinate(3, 3),
-		//	},
-		//	{
-		//		grid.GetCoordinate(1, 5), grid.GetCoordinate(1, 6), grid.GetCoordinate(1, 7),
-		//		grid.GetCoordinate(2, 5), grid.GetCoordinate(2, 6), grid.GetCoordinate(2, 7),
-		//		grid.GetCoordinate(3, 5), grid.GetCoordinate(3, 6), grid.GetCoordinate(3, 7),
-		//	},
-		//	{
-		//		grid.GetCoordinate(5, 1), grid.GetCoordinate(5, 2), grid.GetCoordinate(5, 3),
-		//		grid.GetCoordinate(6, 1), grid.GetCoordinate(6, 2), grid.GetCoordinate(6, 3),
-		//		grid.GetCoordinate(7, 1), grid.GetCoordinate(7, 2), grid.GetCoordinate(7, 3),
-		//	},
-		//	{
-		//		grid.GetCoordinate(5, 5), grid.GetCoordinate(5, 6), grid.GetCoordinate(5, 7),
-		//		grid.GetCoordinate(6, 5), grid.GetCoordinate(6, 6), grid.GetCoordinate(6, 7),
-		//		grid.GetCoordinate(7, 5), grid.GetCoordinate(7, 6), grid.GetCoordinate(7, 7),
-		//	},
-		//}),
-		//&rules.AntiKnightsMoveRule{},
-		//&rules.AntiKingsMoveRule{},
-		//rules.NewAntiQueensMoveRule(generator.NewValueMask(1, 2, 3)),
-		//rules.NewKnightsMoveRule(generator.NewValueMask(2, 4, 6, 8)),
-		//&rules.GivenValuesRule{
-		//	grid.GetCoordinate(1, 0): 4,
-		//	grid.GetCoordinate(1, 1): 2,
-		//},
-		//&rules.NonConsecutiveRule{},
-		rules.NewKillerRule([]rules.KillerEntry{
-			{rules.Area{grid.GetCoordinate(0, 0), grid.GetCoordinate(1, 0), grid.GetCoordinate(2, 0)}, 8},
-			{rules.Area{grid.GetCoordinate(0, 0), grid.GetCoordinate(0, 1)}, 13},
-		}),
+	// Parse args
+	args := args{
+		"",
+	}
+	arg.MustParse(&args)
+
+	var def definition.Definition
+	var err error
+	if args.DefinitionFile == "" {
+		decoder := yaml.NewDecoder(os.Stdin)
+		if err = decoder.Decode(&def); err != nil {
+			fmt.Println(err)
+			return
+		}
+	} else if def, err = definition.FromFile(args.DefinitionFile); err != nil {
+		fmt.Println(err)
+		return
 	}
 
+	fmt.Println(def.Name, "by", def.Author)
+	fmt.Println()
+
+	solutions := []grid.Grid{}
 	start := time.Now()
-	count := 0
-	generator.Generate(rules, func(g grid.Grid) bool {
-		g.Print()
-		count++
-		return count < 1
+	generator.Generate(def.Rules, func(g grid.Grid) bool {
+		solutions = append(solutions, g)
+		return len(solutions) < 2
 	})
-	fmt.Println(time.Now().Sub(start))
+	fmt.Println("runtime:", time.Now().Sub(start))
+
+	if len(solutions) >= 1 {
+		if len(solutions) > 1 {
+			fmt.Println("WARNING: multiple valid solutions found")
+			fmt.Println()
+		}
+		solutions[0].Print()
+	}
+
+	fmt.Println(unsafe.Sizeof(generator.GeneratorState{}))
+
+	//memStats := runtime.MemStats{}
+	//runtime.ReadMemStats(&memStats)
+	//fmt.Printf("%+v\n", memStats)
 }

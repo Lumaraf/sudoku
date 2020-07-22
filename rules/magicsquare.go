@@ -6,7 +6,7 @@ import (
 )
 
 type MagicSquareRule struct {
-	grid.Coordinate
+	Coordinate grid.Coordinate `yaml:"coordinate"`
 }
 
 var cornerMask = generator.NewValueMask(2, 4, 6, 8)
@@ -26,7 +26,7 @@ var magicSquareRing = []struct {
 }
 
 func (r MagicSquareRule) Filter(filter *generator.Filter) bool {
-	row, col := r.Row(), r.Col()
+	row, col := r.Coordinate.Row(), r.Coordinate.Col()
 	if !filter.Restrict(grid.GetCoordinate(row+1, col+1), generator.NewValueMask(5)) {
 		return false
 	}

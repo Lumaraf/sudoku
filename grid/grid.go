@@ -19,6 +19,17 @@ func (c Coordinate) Col() int {
 	return int(c) % 9
 }
 
+func (c *Coordinate) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	raw := [2]int{}
+
+	if err := unmarshal(&raw); err != nil {
+		return err
+	}
+
+	*c = GetCoordinate(raw[0], raw[1])
+	return nil
+}
+
 type Grid [9][9]uint8
 
 func (g *Grid) Print() {

@@ -67,9 +67,9 @@ func (r ColumnRule) Set(current grid.Coordinate, value uint8, state *generator.G
 	next(state)
 }
 
-type SquareRule struct{}
+type BoxRule struct{}
 
-func (r SquareRule) Filter(filter *generator.Filter) bool {
+func (r BoxRule) Filter(filter *generator.Filter) bool {
 	for row := 0; row < 9; row += 3 {
 		for col := 0; col < 9; col += 3 {
 			if !filter.UniqueGroup(
@@ -90,7 +90,7 @@ func (r SquareRule) Filter(filter *generator.Filter) bool {
 	return true
 }
 
-func (r SquareRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
+func (r BoxRule) Set(current grid.Coordinate, value uint8, state *generator.GeneratorState, next generator.NextFunc) {
 	row := (current.Row() / 3) * 3
 	col := (current.Col() / 3) * 3
 	for rowOffset := 0; rowOffset < 3; rowOffset++ {

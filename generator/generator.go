@@ -76,12 +76,12 @@ func (g *GeneratorState) set(coordinate grid.Coordinate, value uint8) bool {
 
 func (g GeneratorState) WithCell(coordinate grid.Coordinate, value uint8, next NextFunc) {
 	*g.steps++
-	if *g.steps%1000000 == 0 {
-		// TODO impelemnt progress callbacks
-		fmt.Println(*g.steps, "steps")
-		g.values.Print()
-		fmt.Println()
-	}
+	//if *g.steps%1000000 == 0 {
+	//	// TODO impelemnt progress callbacks
+	//	fmt.Println(*g.steps, "steps")
+	//	g.values.Print()
+	//	fmt.Println()
+	//}
 
 	if !*g.exit && g.set(coordinate, value) {
 		g.processRules(coordinate, value, next)
@@ -157,7 +157,7 @@ func (g GeneratorState) FillNext() {
 	}
 
 	// no empty cells means the solution is complete
-	fmt.Println(*g.steps)
+	//fmt.Println(*g.steps)
 	if !g.result(g.values) {
 		*g.exit = true
 	}
